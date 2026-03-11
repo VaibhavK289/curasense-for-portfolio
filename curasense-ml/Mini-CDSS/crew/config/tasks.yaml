@@ -1,0 +1,160 @@
+ner_validaton_task:
+  description: |
+    You are a Medical NER Optimization Specialist.
+
+    Your job is to correct, validate, and finalize the NER output for the given clinical text.
+
+    Input:
+      - The original patient text: {input_text}
+      - The initial NER output: {ner_output}
+
+    Requirements:
+      1. Correct fragmented tokens (e.g., "poly uria" → "polyuria").
+      2. Correct medical terms (e.g., "micro aneur y sms" → "microaneurysms").
+      3. Ensure all extracted items are properly categorized:
+          - history
+          - presenting_complaint
+          - signs_and_symptoms
+          - examinations
+          - vital_signs
+          - laboratory_values
+          - extra_summary
+      4. NO hallucination — only fix the text that already exists.
+      5. Format MUST strictly match the Pydantic model:
+         NERValidationOutput
+
+    Your goal is to refine the NER into a clean, structured medical summary usable for diagnosis.
+
+  expected_output: |
+    A corrected and validated medical NER output strictly following the Pydantic model: NERValidationOutput.
+
+
+preliminary_diagnose_task:
+  description: |
+    You are a Senior Clinical Decision Support AI.
+
+    Using ONLY validated information from {post_ner_report}, provide at least {output_count}
+    medically accurate, ICD-10 aligned preliminary diagnoses.
+
+    Requirements:
+      1. Do NOT hallucinate any data not present in input.
+      2. Each diagnosis MUST include:
+         - diagnosis_name
+         - reasoning: a medically grounded explanation using extracted symptoms,
+           labs, vitals, history, and examinations.
+         - recommendations: actionable, evidence-based steps.
+      3. Use structured clinical reasoning:
+          - Pathophysiology when applicable
+          - Risk factors present in the patient
+          - How symptoms and labs support or refute the diagnosis
+      4. Follow the Pydantic model: PreliminaryDiagnosisListOutput
+
+    Example style:
+      - “Uncontrolled Type 2 Diabetes Mellitus”
+      - “Diabetic Retinopathy (Non-Proliferative)”
+      - “Hypertensive Urgency”
+
+  expected_output: |
+    A structured list of preliminary diagnoses following the Pydantic model: PreliminaryDiagnosisListOutput.
+
+
+best_practices_task:
+  description: |
+    You are a Clinical Evidence Retrieval AI.
+
+    For each diagnosis and reasoning:
+      - diagnosis: {diagnosis}
+      - reasoning: {reasoning}
+
+    Retrieve *real*, evidence-based medical best practices using your RAG system
+    OR the webcrawl tool (if available).
+
+    Requirements:
+      1. Use ONLY reliable, public guidelines:
+         - WHO
+         - ADA
+         - AHA
+         - NIH
+         - CDC
+         - Peer-reviewed summaries
+      2. Avoid:
+         - gated sources
+         - subscription-only content
+         - fabricated URLs
+      3. For each best practice entry, provide:
+         - Title
+         - URL
+         - Summary (why it applies to this diagnosis)
+
+    Output MUST match the Pydantic model:
+      [
+        {
+          "title": "...",
+          "url": "...",
+          "summary": "..."
+        }
+      ]
+
+  expected_output: |
+    A list of best practices following the Pydantic model (title, url, summary).
+
+
+report_writing_task:
+  description: |
+    You are a Clinical Report Writer AI.
+
+    Your job is to generate a complete, professional, medical-grade clinical report
+    based ONLY on the structured data:
+
+      - Validated NER Report: {post_ner_report}
+      - Preliminary Diagnoses: {prelim_diagnosis}
+      - Best Practices: {best_pracs}
+
+    You MUST produce a complete markdown-formatted clinical report with the exact structure:
+
+    # Clinical Report
+
+    ## Patient Information
+    * **Age:** {age}
+    * **Sex:** {sex}
+
+    ## History
+    * {each item}
+
+    ## Presenting Complaint
+    {presenting_complaint}
+
+    ## Signs and Symptoms
+    * {each symptom}
+
+    ## Examinations Before Checkup
+    * {each exam}
+
+    ## Vital Signs
+    * **{vital_sign_name}:** {value}
+
+    ## Laboratory Values
+    * **{test_name}:** {value}
+
+    ## Extra Summary
+    {extra_summary}
+
+    ## Preliminary Diagnoses
+    For EACH diagnosis:
+
+    ### {index}. {diagnosis_name}
+    * **Reasoning:**  
+      Clear, clinically accurate reasoning based ONLY on data provided.
+    * **Recommendations:**
+      - actionable recommendation 1
+      - actionable recommendation 2
+      - etc
+
+    RULES:
+      - NEVER hallucinate.
+      - NEVER add symptoms, exams, or values not provided.
+      - ALWAYS include all sections (use “Not Provided” if empty).
+      - ALWAYS output Markdown.
+
+  expected_output: |
+    A polished, correct, structured markdown clinical report ready for display or PDF export.

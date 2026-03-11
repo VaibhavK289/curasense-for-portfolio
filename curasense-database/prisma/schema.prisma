@@ -1,0 +1,265 @@
+// CuraSense Database Schema
+// PostgreSQL with Prisma ORM
+// Designed for healthcare AI application
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum ReportType {
+  PRESCRIPTION
+  XRAY
+  CT_SCAN
+  MRI
+  TEXT_ANALYSIS
+  MEDICINE_COMPARISON
+}
+
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+enum FileType {
+  PDF
+  IMAGE_PNG
+  IMAGE_JPEG
+  IMAGE_WEBP
+  TEXT
+}
+
+// ============================================
+// USER TABLE
+// Stores user credentials and profile information
+// ============================================
+
+model User {
+  id                String      @id @default(cuid())
+  
+  // Credentials
+  email             String      @unique
+  passwordHash      String      @map("password_hash")
+  
+  // Profile Information
+  firstName         String      @map("first_name")
+  lastName          String      @map("last_name")
+  displayName       String?     @map("display_name")
+  avatarUrl         String?     @map("avatar_url")
+  phone             String?
+  dateOfBirth       DateTime?   @map("date_of_birth")
+  
+  // Role & Status
+  role              UserRole    @default(PATIENT)
+  status            UserStatus  @default(PENDING_VERIFICATION)
+  
+  // Security
+  emailVerified     Boolean     @default(false) @map("email_verified")
+  emailVerifiedAt   DateTime?   @map("email_verified_at")
+  lastLoginAt       DateTime?   @map("last_login_at")
+  lastLoginIp       String?     @map("last_login_ip")
+  failedLoginCount  Int         @default(0) @map("failed_login_count")
+  lockedUntil       DateTime?   @map("locked_until")
+  
+  // Preferences
+  preferences       Json?       @default("{}")
+  
+  // Timestamps
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+  
+  // Relations
+  reports           Report[]
+  sessions          Session[]
+  auditLogs         AuditLog[]
+
+  // Indexes for common queries
+  @@index([email])
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+  @@index([lastName, firstName])
+  
+  @@map("users")
+}
+
+// ============================================
+// SESSION TABLE
+// For managing user sessions (JWT refresh tokens)
+// ============================================
+
+model Session {
+  id            String    @id @default(cuid())
+  
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token         String    @unique
+  userAgent     String?   @map("user_agent")
+  ipAddress     String?   @map("ip_address")
+  
+  expiresAt     DateTime  @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastActiveAt  DateTime  @default(now()) @map("last_active_at")
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  
+  @@map("sessions")
+}
+
+// ============================================
+// REPORT TABLE
+// Stores analysis reports with file metadata
+// ============================================
+
+model Report {
+  id                String        @id @default(cuid())
+  
+  // Owner
+  userId            String        @map("user_id")
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Report Info
+  title             String
+  description       String?
+  type              ReportType
+  status            ReportStatus  @default(PENDING)
+  
+  // File Metadata (original upload)
+  originalFileName  String?       @map("original_file_name")
+  fileType          FileType?     @map("file_type")
+  fileSizeBytes     Int?          @map("file_size_bytes")
+  fileUrl           String?       @map("file_url")
+  fileHash          String?       @map("file_hash") // SHA-256 for deduplication
+  
+  // Analysis Results
+  summary           String?       @db.Text
+  content           String?       @db.Text // Full markdown content
+  findings          String[]      @default([])
+  
+  // AI Metrics
+  confidenceScore   Float?        @map("confidence_score") // 0.0 - 1.0
+  processingTimeMs  Int?          @map("processing_time_ms")
+  aiModelVersion    String?       @map("ai_model_version")
+  
+  // Error Handling
+  errorMessage      String?       @map("error_message")
+  errorCode         String?       @map("error_code")
+  retryCount        Int           @default(0) @map("retry_count")
+  
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  processedAt       DateTime?     @map("processed_at")
+  archivedAt        DateTime?     @map("archived_at")
+  
+  // Soft delete
+  deletedAt         DateTime?     @map("deleted_at")
+  
+  // Indexes for common queries
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId, type])
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([fileHash]) // For deduplication checks
+  
+  @@map("reports")
+}
+
+// ============================================
+// AUDIT LOG TABLE
+// For tracking user actions (HIPAA compliance)
+// ============================================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  
+  userId      String?   @map("user_id")
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      String    // e.g., "LOGIN", "REPORT_CREATE", "REPORT_VIEW"
+  resource    String?   // e.g., "Report", "User"
+  resourceId  String?   @map("resource_id")
+  
+  details     Json?     @default("{}")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  @@index([userId])
+  @@index([action])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  
+  @@map("audit_logs")
+}
+
+// ============================================
+// ANALYTICS AGGREGATE TABLE
+// Pre-computed analytics for dashboard performance
+// ============================================
+
+model AnalyticsDaily {
+  id              String    @id @default(cuid())
+  
+  date            DateTime  @db.Date
+  
+  // Report counts by type
+  prescriptionCount   Int   @default(0) @map("prescription_count")
+  xrayCount           Int   @default(0) @map("xray_count")
+  ctScanCount         Int   @default(0) @map("ct_scan_count")
+  mriCount            Int   @default(0) @map("mri_count")
+  textAnalysisCount   Int   @default(0) @map("text_analysis_count")
+  medicineCompCount   Int   @default(0) @map("medicine_comp_count")
+  
+  // Status counts
+  completedCount      Int   @default(0) @map("completed_count")
+  failedCount         Int   @default(0) @map("failed_count")
+  
+  // Performance metrics
+  avgProcessingTimeMs Float? @map("avg_processing_time_ms")
+  avgConfidenceScore  Float? @map("avg_confidence_score")
+  
+  // User metrics
+  activeUsers         Int   @default(0) @map("active_users")
+  newUsers            Int   @default(0) @map("new_users")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  @@unique([date])
+  @@index([date])
+  
+  @@map("analytics_daily")
+}

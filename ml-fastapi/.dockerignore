@@ -1,0 +1,13 @@
+.env
+.env.example
+.git
+.gitignore
+__pycache__
+*.pyc
+.chroma/
+venv/
+*.log
+nul
+render.yaml
+test_*.py
+start_xray_server.bat

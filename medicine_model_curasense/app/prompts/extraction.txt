@@ -1,0 +1,22 @@
+Extract structured medical information from the provided context.
+
+Return ONLY valid JSON matching this schema:
+
+{
+  "name": string,
+  "dosage_mg": number or null,
+  "price": number or null,
+  "composition": [string],
+  "uses": [string],
+  "side_effects": [string],
+  "warnings": [string],
+  "contraindications": [string],
+  "manufacturer": string or null,
+  "source_urls": [string]
+}
+
+Rules:
+- Do NOT hallucinate missing values.
+- If unknown, return null.
+- No explanations outside JSON.
+- Output must be valid JSON.

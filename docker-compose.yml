@@ -1,0 +1,105 @@
+services:
+  # ============================================================
+  # Frontend — Next.js (port 3000)
+  # ============================================================
+  frontend:
+    build:
+      context: ./curasense-frontend
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    container_name: curasense-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - CRON_SECRET=${CRON_SECRET}
+      - BACKEND_API_URL=http://ml-api:8000
+      - BACKEND_VISION_URL=http://vision-api:8001
+      - MEDICINE_API_URL=http://medicine-api:8002
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      ml-api:
+        condition: service_healthy
+      vision-api:
+        condition: service_healthy
+      medicine-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ============================================================
+  # ML API — curasense-ml (port 8000)
+  # Diagnosis pipeline, CrewAI, HuggingFace NER
+  # ============================================================
+  ml-api:
+    build:
+      context: ./curasense-ml
+    container_name: curasense-ml-api
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ============================================================
+  # Vision API — ml-fastapi (port 8001)
+  # X-ray analysis, RAG, vision graph
+  # ============================================================
+  vision-api:
+    build:
+      context: ./ml-fastapi
+    container_name: curasense-vision-api
+    ports:
+      - "8001:8001"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - GOOGLE_CREDENTIALS_BASE64=${GOOGLE_CREDENTIALS_BASE64}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ============================================================
+  # Medicine API — medicine_model (port 8002)
+  # Medicine lookup, comparison, recommendations, image analysis
+  # ============================================================
+  medicine-api:
+    build:
+      context: ./medicine_model_curasense
+    container_name: curasense-medicine-api
+    ports:
+      - "8002:8002"
+    environment:
+      # Note: medicine_model uses GEMINI_API_KEY (not GOOGLE_API_KEY)
+      # Can be the same key or a different one — set in .env
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped

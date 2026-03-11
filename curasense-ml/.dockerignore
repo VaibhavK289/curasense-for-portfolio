@@ -1,0 +1,13 @@
+.env
+.git
+.gitignore
+__pycache__
+*.pyc
+Mini-CDSS/
+report.md
+venv/
+*.log
+nul
+project_flow.html
+LICENSE
+.env.example

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-CDSS - Clinical Decision Support System</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Mini-CDSS</h1>
+            <p class="subtitle">Clinical Decision Support System</p>
+        </header>
+
+        <!-- API Configuration Section -->
+        <section class="card">
+            <h2>🔑 API Configuration</h2>
+            <div class="form-group">
+                <label for="gemini-api">Gemini API Key:</label>
+                <input type="password" id="gemini-api" placeholder="Enter Gemini API key">
+            </div>
+            <div class="form-group">
+                <label for="groq-api">Groq API Key:</label>
+                <input type="password" id="groq-api" placeholder="Enter Groq API key">
+            </div>
+            <div class="form-group">
+                <label for="tavily-api">Tavily API Key:</label>
+                <input type="password" id="tavily-api" placeholder="Enter Tavily API key">
+            </div>
+            <button onclick="validateAndSetAPI()" class="btn btn-primary">Validate & Set API Keys</button>
+            <div id="api-status" class="status-message"></div>
+        </section>
+
+        <!-- Main Diagnosis Section -->
+        <section class="card">
+            <h2>📋 Patient Encounter Analysis</h2>
+            <div class="form-group">
+                <label for="thread-id">Session ID:</label>
+                <input type="text" id="thread-id" placeholder="Auto-generated" readonly>
+                <button onclick="generateThreadID()" class="btn btn-secondary">Generate New Session</button>
+            </div>
+            <div class="form-group">
+                <label for="patient-summary">Initial Patient Summary:</label>
+                <textarea id="patient-summary" rows="6" placeholder="Enter patient encounter details (symptoms, history, vitals, etc.)"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="diagnosis-count">Number of Diagnoses:</label>
+                <input type="number" id="diagnosis-count" value="3" min="1" max="10">
+            </div>
+            <div class="form-group">
+                <label for="medical-report">Medical Report (Optional):</label>
+                <textarea id="medical-report" rows="4" placeholder="Additional medical reports or lab results"></textarea>
+            </div>
+            <button onclick="startGraph()" class="btn btn-primary">Start Analysis</button>
+            <div id="graph-status" class="status-message"></div>
+        </section>
+
+        <!-- Document Upload Section -->
+        <section class="card">
+            <h2>📄 Document Upload & Analysis</h2>
+            <div class="form-group">
+                <label for="pdf-files">Upload Medical Documents (PDF):</label>
+                <input type="file" id="pdf-files" multiple accept=".pdf">
+            </div>
+            <button onclick="uploadDocuments()" class="btn btn-primary">Upload & Create Vector DB</button>
+            <button onclick="extractMedicalDetails()" class="btn btn-secondary">Extract Medical Insights</button>
+            <div id="upload-status" class="status-message"></div>
+        </section>
+
+        <!-- RAG Chat Section -->
+        <section class="card">
+            <h2>💬 Chat with Documents</h2>
+            <div class="form-group">
+                <label for="rag-question">Ask a Question:</label>
+                <input type="text" id="rag-question" placeholder="What information do you need from the documents?">
+            </div>
+            <button onclick="ragSearch()" class="btn btn-primary">Search</button>
+            <div id="rag-status" class="status-message"></div>
+            <div id="rag-answer" class="result-box"></div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="card">
+            <h2>📊 Generated Reports</h2>
+            <div class="report-buttons">
+                <button onclick="getReport('ner')" class="btn btn-secondary">NER Report</button>
+                <button onclick="getReport('prelim')" class="btn btn-secondary">Preliminary Report</button>
+                <button onclick="getReport('bestprac')" class="btn btn-secondary">Best Practices</button>
+                <button onclick="getReport('medical')" class="btn btn-secondary">Medical Insights</button>
+            </div>
+            <div id="report-output" class="result-box markdown-content"></div>
+        </section>
+
+        <!-- Vision Analysis Section -->
+        <section class="card">
+            <h2>🖼️ Medical Image Analysis</h2>
+            <div class="form-group">
+                <label for="image-upload">Upload Medical Image:</label>
+                <input type="file" id="image-upload" accept="image/*">
+            </div>
+            <button onclick="uploadImage()" class="btn btn-primary">Upload Image</button>
+            <div class="form-group">
+                <label for="image-query">Ask about the image:</label>
+                <input type="text" id="image-query" placeholder="What would you like to know about this image?">
+            </div>
+            <button onclick="queryImage()" class="btn btn-secondary">Analyze</button>
+            <div id="vision-status" class="status-message"></div>
+            <div id="vision-answer" class="result-box"></div>
+        </section>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

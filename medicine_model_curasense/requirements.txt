@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+google-generativeai
+groq
+tavily-python
+chromadb
+sentence-transformers
+beautifulsoup4
+requests
+python-multipart

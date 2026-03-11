@@ -1,0 +1,43 @@
+# Temp Claude/Copilot files
+tmpclaude-*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# ChromaDB local storage
+.chroma/
+
+# Azure deployment credentials
+.azure-credentials
+
+# Misc
+nul
+*.pdf
