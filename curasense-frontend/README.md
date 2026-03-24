@@ -8,8 +8,8 @@ Next.js 16 frontend for the CuraSense AI-powered healthcare platform.
 
 | Technology | Version | Purpose |
 |---|---|---|
-| Next.js | 16.0.6 | React framework (App Router + Turbopack) |
-| React | 19.2.0 | UI library |
+| Next.js | 16.0.11 | React framework (App Router + Turbopack) |
+| React | 19.0.4 | UI library |
 | TypeScript | 5.x | Type safety |
 | Tailwind CSS | 4.x | Utility-first styling |
 | Framer Motion | 12.x | Animations and transitions |
@@ -193,6 +193,34 @@ npm run start    # Serves production build on port 3000
 ```
 
 The build uses `output: "standalone"` in `next.config.ts` for self-contained deployment.
+
+---
+
+## Deployment to Vercel
+
+This frontend can be deployed independently to Vercel. Follow these steps:
+
+### 1. Environment Variables
+Add the following variables to your Vercel Project Settings:
+
+- `DATABASE_URL`: Your NeonDB connection string (use the **pooled** version).
+- `JWT_SECRET`: A 64-character random string for signing tokens.
+- `JWT_REFRESH_SECRET`: Another 64-character random string for refresh tokens.
+- `NEXTAUTH_URL`: Your public Vercel URL (e.g., `https://your-project.vercel.app`).
+- `ACCESS_TOKEN_EXPIRES_IN`: `15m`
+- `REFRESH_TOKEN_EXPIRES_IN`: `7d`
+
+### 2. Build Settings
+- **Build Command**: `prisma generate && next build`
+- **Output Directory**: `.next` (default)
+- **Install Command**: `npm install`
+
+### 3. Database Push
+After deployment, if you haven't already initialized your database, run:
+```bash
+npx prisma db push
+```
+This ensures the remote database has the correct schema for user accounts.
 
 ---
 
