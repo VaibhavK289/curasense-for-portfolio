@@ -29,7 +29,8 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'ALLOW-FROM https://vaibhavkandhway.dev', // Replace with your portfolio's domain
+            value: 'ALLOW-FROM https://vaibhavkandhway.dev',
+             // Replace with your portfolio's domain
           },
           // Or, for more modern browsers, you can use Content-Security-Policy
           {
